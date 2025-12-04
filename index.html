@@ -421,6 +421,40 @@
             font-family: monospace;
             color: #0066cc;
         }
+
+        /* Retro Glimmering Effect */
+        @keyframes retro-glimmer {
+            0% {
+                background-position: -600px;
+            }
+            100% {
+                background-position: 600px;
+            }
+        }
+
+        #readme.glimmer {
+            position: relative;
+            overflow: hidden;
+            background:   linear-gradient(151deg, #1d1d1d 21.85%, rgba(165, 217, 241, 0.6) 49.16%, #2c3a3b 76.89%);
+            background-repeat: no-repeat;
+            background-size: 300%;
+            background-position: -600px;
+            animation: retro-glimmer 6s ease-in-out infinite;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        #readme.glimmer:hover {
+            background: -webkit-linear-gradient(135deg, #4a4a4a 0%, #4a4a4a 35%, #ffffff 50%, #4a4a4a 65%, #4a4a4a 100%);
+            background: linear-gradient(135deg, #4a4a4a 0%, #4a4a4a 35%, #ffffff 50%, #4a4a4a 65%, #4a4a4a 100%);
+            background-repeat: no-repeat;
+            background-size: 300%;
+            background-position: -600px;
+            animation: retro-glimmer 3s ease-in-out infinite;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -442,6 +476,7 @@
                 <button id="playPause" class="primary">▶ Play</button>
                 <button id="stepForward">+1s ⏭</button>
                 <button id="exportState">Export</button>
+                <button id="readme" class="glimmer">Readme</button>
             </div>
 
             <div class="playback-info">
