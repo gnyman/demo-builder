@@ -1,6 +1,6 @@
 # Demo Scene Builder - Developer Documentation
 
-*Note*: This is all vibe coded. There is no guarantee anything makes any sense but it works on my machine :-)
+*Note*: This is all vibe coded and this readme is all AI written (except this paragraph). There is no guarantee anything makes any sense but it works on my machine :-)
 
 ## What Is This?
 
