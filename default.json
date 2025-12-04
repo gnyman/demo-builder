@@ -1,0 +1,121 @@
+{
+  "tracks": [
+    {
+      "id": 1,
+      "name": "Track 1",
+      "zIndex": 0,
+      "renderTarget": "main",
+      "enabled": true,
+      "scenes": [
+        {
+          "id": 1,
+          "name": "Track 1 Scene",
+          "startTime": 0,
+          "endTime": 5000,
+          "code": "\n// Red Text Config\nctx.font = \"20px Courier New\";\nctx.fillStyle = \"#f22\";\nconst lineHeight = 30;\nconst startY = h/2 - 60;\n\nconst lines = [\n    \"INITIALIZING KERNEL...\",\n    \"LOADING MODULES: [X] AUDIO [X] VIDEO [X] NET\",\n    \"ESTABLISHING SECURE CONNECTION...\",\n    \"ACCESS GRANTED.\",\n    \"WELCOME TO HELSEC.\"\n];\n\n// Draw lines based on time\nlines.forEach((line, i) => {\n    // Delay each line by 800ms\n    if (t > i * 800) {\n        // Blinking cursor effect for the active line\n        let txt = line;\n        if (t < (i+1) * 800 && Math.floor(t / 200) % 2 === 0) {\n            txt += \"_\";\n        }\n        ctx.fillText(txt, 60, startY + (i * lineHeight));\n    }\n});\n\n// CRT Scanline Effect\n// Moving bar\nconst scanY = (t * 0.2) % h;\nctx.fillStyle = \"rgba(0, 255, 0, 0.1)\";\nctx.fillRect(0, scanY, w, 5);\n\n// Static noise overlay\nfor (let i = 0; i < 20; i++) {\n    const rx = seededRandom(t + i) * w;\n    const ry = seededRandom(t + i + 1) * h;\n    ctx.fillStyle = `rgba(0, 255, 0, ${seededRandom(t+i+2) * 0.3})`;\n    ctx.fillRect(rx, ry, 2, 2);\n}",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 8,
+          "name": "rainbows",
+          "startTime": 5000,
+          "endTime": 18000,
+          "code": "// --- HELPERS ---\nfunction project3D(x, y, z, width, height) {\n    const fov = 300;\n    // Simple camera offset\n    const scale = fov / (fov + z);\n    return {\n        x: width / 2 + x * scale,\n        y: height / 2 + y * scale,\n        scale: scale,\n        visible: z > -fov // Don't draw if behind camera\n    };\n}\n\nfunction rotateY(x, z, angle) {\n    const cos = Math.cos(angle);\n    const sin = Math.sin(angle);\n    return { x: x * cos - z * sin, z: x * sin + z * cos };\n}\n\nfunction rotateX(y, z, angle) {\n    const cos = Math.cos(angle);\n    const sin = Math.sin(angle);\n    return { y: y * cos - z * sin, z: y * sin + z * cos };\n}\n\n// Clear BG\nctx.fillStyle = '#050510';\nctx.fillRect(0, 0, w, h);\n\n// --- 1. STARFIELD ---\nctx.fillStyle = '#fff';\nfor(let i=0; i<300; i++) {\n    // Deterministic Star Generation\n    const sx = (seededRandom(i) - 0.5) * 2000;\n    const sy = (seededRandom(i+1000) - 0.5) * 2000;\n    const startZ = seededRandom(i+2000) * 2000;\n    \n    // Move stars towards camera: z decreases over time\n    // We add 20000 to t*speed to ensure positive modulo result if needed, \n    // but here we just wrap manually\n    let z = (startZ - t * 0.5);\n    \n    // Wrap around logic using modulo\n    // We want Z to be between 0 and 2000\n    z = ((z % 2000) + 2000) % 2000; \n\n    if (z > 1) {\n        const p = project3D(sx, sy, z, w, h);\n        const size = (1 - z / 2000) * 3;\n        if(p.visible) ctx.fillRect(p.x, p.y, size, size);\n    }\n}\n\n// --- 2. ROTATING CUBE ---\nconst size = 100;\nconst vertices = [\n    {x:-size,y:-size,z:-size}, {x:size,y:-size,z:-size}, {x:size,y:size,z:-size}, {x:-size,y:size,z:-size},\n    {x:-size,y:-size,z:size}, {x:size,y:-size,z:size}, {x:size,y:size,z:size}, {x:-size,y:size,z:size}\n];\nconst edges = [\n    [0,1],[1,2],[2,3],[3,0], [4,5],[5,6],[6,7],[7,4], [0,4],[1,5],[2,6],[3,7]\n];\n\nconst angleX = t * 0.0005;\nconst angleY = t * 0.0008;\n\nctx.strokeStyle = '#00ffff';\nctx.lineWidth = 2;\nctx.beginPath();\n\nconst projectedVerts = vertices.map(v => {\n    let r1 = rotateY(v.x, v.z, angleY);\n    let r2 = rotateX(v.y, r1.z, angleX);\n    // Push cube back into scene and bounce it slightly\n    let zPos = r2.z + 400 + Math.sin(t * 0.002) * 50; \n    return project3D(r1.x, r2.y, zPos, w, h);\n});\n\nedges.forEach(edge => {\n    const p1 = projectedVerts[edge[0]];\n    const p2 = projectedVerts[edge[1]];\n    if(p1.visible && p2.visible) {\n        ctx.moveTo(p1.x, p1.y);\n        ctx.lineTo(p2.x, p2.y);\n    }\n});\nctx.stroke();\n\n// --- 3. SINE SCROLLER ---\nconst msg = \"HELSEC ::: BY THE COMMUNITY ::: FOR THE COMMUNITY :::      \";\nctx.font = 'bold 40px \"Courier New\"';\nconst charW = 30;\nconst scrollSpeed = 0.2;\nconst offset = (t * scrollSpeed); // Distance moved\n\nfor (let i = 0; i < msg.length; i++) {\n    const charX = w - offset + (i * charW);\n    // Wrap logic if you wanted infinite scroll loop:\n    // const wrapW = msg.length * charW;\n    // const cyclicX = ((charX % wrapW) + wrapW) % wrapW; \n    \n    // Only draw if on screen\n    if (charX > -50 && charX < w + 50) {\n        const bounce = Math.sin((charX + t * 0.5) * 0.01) * 40;\n        const y = h - 100 + bounce;\n        \n        // Color Cycle\n        const hue = (t * 0.1 + i * 10) % 360;\n        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;\n        ctx.fillText(msg[i], charX, y);\n    }\n}",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 9,
+          "name": "Scene 9",
+          "startTime": 18000,
+          "endTime": 23000,
+          "code": "// Clear\nctx.fillStyle = '#000';\nctx.fillRect(0, 0, w, h);\n\nconst cx = w/2;\nconst cy = h/2;\n\n// --- 1. TUNNEL RINGS ---\n// We draw 20 rings\nfor(let i = 0; i < 20; i++) {\n    // Calculate Z based on time to create movement\n    // spacing = 100, speed = 0.5\n    const zOffset = (t * 0.5 + i * 100) % 2000;\n    \n    // Simple projection logic inline\n    const fov = 300;\n    const scale = fov / (fov + zOffset);\n    \n    // Radius gets larger as it gets closer (scale increases)\n    const baseRadius = 50; \n    \n    // Deform the ring shape\n    const deform = Math.sin(t * 0.002 + i) * 50;\n    \n    ctx.beginPath();\n    ctx.strokeStyle = (i % 2 === 0) ? '#ff00ff' : '#00ff41';\n    ctx.lineWidth = Math.max(1, 5 - zOffset/400);\n\n    const sides = 6;\n    for(let j = 0; j <= sides; j++) {\n        const ang = (j / sides) * Math.PI * 2 + (t * 0.001); // Rotate whole tunnel\n        const r = (baseRadius * 500 / (zOffset + 10)) + Math.sin(ang * 5 + t * 0.005) * 20;\n        \n        const px = cx + Math.cos(ang) * r;\n        const py = cy + Math.sin(ang) * r;\n        \n        if (j === 0) ctx.moveTo(px, py);\n        else ctx.lineTo(px, py);\n    }\n    ctx.stroke();\n}\n\n// --- 2. GLITCH LOGO ---\nctx.save();\nctx.translate(cx, cy);\n\n// Pulse scale\nconst scale = 1 + Math.sin(t * 0.008) * 0.1;\nctx.scale(scale, scale);\n\nctx.textAlign = 'center';\nctx.textBaseline = 'middle';\nctx.font = 'bold 80px \"Courier New\"';\n\nconst seed = Math.floor(t / 50); // Change glitch every 50ms\nconst glitchX = (seededRandom(seed) - 0.5) * 10;\nconst glitchY = (seededRandom(seed + 1) - 0.5) * 10;\n\n// Draw RGB Split\nctx.globalCompositeOperation = 'screen';\n\nctx.fillStyle = 'rgba(255, 0, 0, 0.7)';\nctx.fillText(\"HELSEC\", glitchX, glitchY);\n\nctx.fillStyle = 'rgba(0, 255, 255, 0.7)';\nctx.fillText(\"HELSEC\", -glitchX, -glitchY);\n\nctx.fillStyle = 'white';\nctx.fillText(\"HELSEC\", 0, 0);\n\n// Slogan\nctx.font = '20px monospace';\nctx.globalCompositeOperation = 'source-over';\nctx.fillText(\"BY THE COMMUNITY // FOR THE COMMUNITY\", 0, 60);\n\nctx.restore();",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 13,
+          "name": "Scene 13",
+          "startTime": 23000,
+          "endTime": 28000,
+          "code": "// ============================================================\n// SCENE: HelSec / Logo (render target: main)\n// ============================================================\n\nconst dur = Math.max(1, endTime - startTime);\nconst p = t / dur;\nconst ts = t / 1000;\n\nconst text = \"HelSec\";\nconst base = Math.min(w, h) * 0.12;\nconst wob = Math.sin(ts * 1.3) * 10;\nconst rot = Math.sin(ts * 0.6) * 0.08;\nconst cx = w * 0.5;\nconst cy = h * 0.2 + wob;\n\nctx.save();\nctx.translate(cx, cy);\nctx.rotate(rot);\n\nctx.textAlign = \"center\";\nctx.textBaseline = \"middle\";\nctx.font = `900 ${Math.max(24, base)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;\n\n// Faux extrusion\nconst depth = 18;\nfor (let i = depth; i >= 1; i--) {\n  const k = i / depth;\n  ctx.fillStyle = `rgba(${Math.round(10 + 30 * k)},${Math.round(40 + 80 * k)},${Math.round(120 + 120 * k)},0.65)`;\n  ctx.fillText(text, i * 1.1, i * 1.0);\n}\n\n\n\n// Main gradient\nconst shine = 0.5 + 0.5 * Math.sin(ts * 1.8);\nconst grad = ctx.createLinearGradient(-base * 2, -base, base * 2, base);\ngrad.addColorStop(0.0, `rgba(240,240,255,0.92)`);\ngrad.addColorStop(0.4, `rgba(160,240,255,0.98)`);\ngrad.addColorStop(0.6, `rgba(255,210,80,${0.70 + 0.24 * shine})`);\ngrad.addColorStop(1.0, `rgba(255,120,200,0.88)`);\n\nctx.fillStyle = grad;\nctx.fillText(text, 0, 0);\n\nctx.restore();\n",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Track 2",
+      "zIndex": -1,
+      "renderTarget": "main",
+      "enabled": true,
+      "scenes": [
+        {
+          "id": 2,
+          "name": "Track 2 Scene",
+          "startTime": 28100,
+          "endTime": 33200,
+          "code": "// ctx: Canvas context\n// t: Time in milliseconds (0 to duration)\n// w: Canvas width\n// h: Canvas height\n\n// Example: Animated gradient\nconst progress = t / (endTime - startTime);\nconst hue = (progress * 360) % 360;\n\nctx.fillStyle = `hsl(${hue}, 70%, 50%)`;\nctx.fillRect(0, 0, w, h);\n\n// Draw some text\nctx.fillStyle = 'white';\nctx.font = 'bold 48px Arial';\nctx.textAlign = 'center';\nctx.textBaseline = 'middle';\nctx.fillText('THANK YOU!', w/2, h/2);\n",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 6,
+          "name": "Scene 6",
+          "startTime": 0,
+          "endTime": 5000,
+          "code": "// 1. Scanlines\nctx.fillStyle = 'rgba(0, 0, 0, 0.3)';\n// Use 'h' to limit loop, but jump by 4px for performance\nfor(let i = 0; i < h; i += 4) {\n    ctx.fillRect(0, i, w, 2);\n}\n\n// 2. Vignette\n// We create a gradient from center to corners\nconst grad = ctx.createRadialGradient(w/2, h/2, h/3, w/2, h/2, h);\ngrad.addColorStop(0, 'rgba(0,0,0,0)');\ngrad.addColorStop(1, 'rgba(0,0,0,0.3)');\n\nctx.fillStyle = grad;\nctx.fillRect(0, 0, w, h);\n\n// 3. Subtle RGB Shift (Chromatic Aberration) based on time\nconst shift = Math.sin(t / 200) * 2;\n// This is a \"cheap\" version that just draws a shifted border\n// Real chromatic aberration requires buffer manipulation which is expensive\nctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';\nctx.lineWidth = 2;\nctx.strokeRect(shift, 0, w, h);\nctx.strokeStyle = 'rgba(0, 0, 255, 0.2)';\nctx.strokeRect(-shift, 0, w, h);",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 12,
+          "name": "Scene 12",
+          "startTime": 18000,
+          "endTime": 23000,
+          "code": "// ============================================================\n// SCENE: HelSec / Raster bars (render target: main)\n// z-index: 10\n// ============================================================\n\nconst ts = t / 1000;\n\nctx.save();\nctx.globalCompositeOperation = \"overlay\";\n\nconst bands = 10;\nfor (let i = 0; i < bands; i++) {\n  const y = (h * (i / bands)) + (Math.sin(ts * 1.2 + i) * 18);\n  const hh = (h / bands) * 0.55;\n\n  const g = ctx.createLinearGradient(0, y, 0, y + hh);\n  g.addColorStop(0.0, \"rgba(255,0,140,0.0)\");\n  g.addColorStop(0.5, \"rgba(80,220,255,0.18)\");\n  g.addColorStop(1.0, \"rgba(255,210,60,0.0)\");\n\n  ctx.fillStyle = g;\n  ctx.fillRect(0, y, w, hh);\n}\nctx.restore();\n",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        },
+        {
+          "id": 5,
+          "name": "Scene 5",
+          "startTime": 23000,
+          "endTime": 28000,
+          "code": "ctx.fillStyle = \"#110011\";\nctx.fillRect(0,0,w,h);\n\nconst cx = w/2;\nconst cy = h/3;\nconst horizon = h/2;\n\nctx.strokeStyle = \"#d0f\";\nctx.lineWidth = 2;\nctx.beginPath();\n\n// 1. Perspective Vertical Lines\nfor(let i = -10; i <= 10; i++) {\n    // Use simple perspective math\n    const x = cx + (i * 120);\n    ctx.moveTo(x, h);\n    ctx.lineTo(cx + (i * 10), horizon);\n}\n\n// 2. Moving Horizontal Lines\n// Speed calculated from time\n// 2. Moving Horizontal Lines (fixed: reaches horizon + matches grid width)\nconst lanes = 10;\nconst nearSpacing = 120; // bottom spacing (matches your vertical starts)\nconst farSpacing  = 10;  // horizon spacing (matches your vertical ends)\n\nconst lineCount = 60;            // more lines = closer to the horizon\nconst scroll = (t * 0.0008) % 1; // t is ms from rAF; tweak 0.0008 for speed\n\nfor (let i = 0; i < lineCount; i++) {\n  // z decreases over time so lines move toward the viewer (downscreen)\n  let z = i - scroll;\n  if (z < 0) z += lineCount;\n\n  // Perspective: far (large z) approaches horizon\n  const y = horizon + (h - horizon) / (z + 1);\n\n  if (y >= horizon && y <= h) {\n    const p = (y - horizon) / (h - horizon); // 0 at horizon, 1 at bottom\n\n    // Width matches your vertical perspective family\n    const spacingAtY = farSpacing + (nearSpacing - farSpacing) * p;\n    const xL = cx + (-lanes * spacingAtY);\n    const xR = cx + ( lanes * spacingAtY);\n\n    ctx.moveTo(xL, y);\n    ctx.lineTo(xR, y);\n  }\n}\n\nctx.stroke();\n\n// 3. The Sun\nconst sunY = horizon - 80;\nconst sunSize = 90;\n\n// Gradient for sun\nconst grad = ctx.createLinearGradient(0, sunY - sunSize, 0, sunY + sunSize);\ngrad.addColorStop(0, \"#ff0\");\ngrad.addColorStop(1, \"#f0f\");\n\nctx.fillStyle = grad;\nctx.beginPath();\nctx.arc(cx, sunY, sunSize, 0, Math.PI * 2);\nctx.fill();\n\n// Sun Cuts (Retro blind style)\nctx.fillStyle = \"#110011\"; // Match background\nfor(let i = 0; i < 8; i++) {\n    const cutHeight = 4 + i;\n    const cutY = sunY + (i * 12) - 10;\n    if(cutY < sunY + sunSize) {\n        ctx.fillRect(cx - sunSize, cutY, sunSize*2, cutHeight);\n    }\n}",
+          "hasError": false,
+          "errorMessage": null,
+          "runtimeError": null,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Track 3",
+      "zIndex": 2,
+      "renderTarget": "buffer1",
+      "scenes": [],
+      "enabled": true
+    }
+  ],
+  "duration": 39200,
+  "canvasWidth": 800,
+  "canvasHeight": 256
+}

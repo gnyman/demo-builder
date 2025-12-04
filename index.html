@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Scene Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: auto 1fr auto 300px;
+            height: 100vh;
+            gap: 1px;
+            background: #000;
+        }
+
+        /* Top Controls */
+        .top-controls {
+            background: #2a2a2a;
+            padding: 10px 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 1px solid #000;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .control-group input[type="number"] {
+            width: 80px;
+            padding: 5px 8px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            border-radius: 3px;
+        }
+
+        button {
+            padding: 6px 16px;
+            background: #3a3a3a;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover {
+            background: #4a4a4a;
+        }
+
+        button:active {
+            background: #2a2a2a;
+        }
+
+        button.primary {
+            background: #0066cc;
+            border-color: #0066cc;
+        }
+
+        button.primary:hover {
+            background: #0077ee;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        #mainCanvas {
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Timeline */
+        .timeline {
+            background: #252525;
+            padding: 10px;
+            overflow-x: auto;
+            overflow-y: auto;
+            border-top: 1px solid #000;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .timeline-ruler {
+            background: #1a1a1a;
+            height: 30px;
+            position: relative;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+
+        .playhead {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #ff4444;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .playhead::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            background: #ff4444;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .time-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-left: 1px solid #444;
+            color: #888;
+            font-size: 10px;
+            padding-left: 3px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .tracks-container {
+            min-height: 100px;
+        }
+
+        .track {
+            background: #2a2a2a;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #333;
+            position: relative;
+            height: 40px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .track.selected {
+            border-color: #0066cc;
+            background: #2d2d3a;
+        }
+
+        .track.drag-target {
+            background: #3a3a4a;
+            border-color: #0088ff;
+            border-style: dashed;
+        }
+
+        .track-header {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 3px;
+        }
+
+        .track-bar {
+            position: relative;
+            height: 20px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .track-segment {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(135deg, #0066cc 0%, #0088ff 100%);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            font-size: 10px;
+            color: white;
+            overflow: hidden;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .track-segment:active {
+            cursor: grabbing !important;
+        }
+
+        .track-segment.selected {
+            background: linear-gradient(135deg, #0088ff 0%, #00aaff 100%);
+            box-shadow: 0 0 0 2px #0066cc;
+        }
+
+        .track-segment.error {
+            background: linear-gradient(135deg, #cc0000 0%, #ff0000 100%);
+        }
+
+        .track-segment.hidden {
+            background: linear-gradient(135deg, #555 0%, #666 100%);
+            opacity: 0.5;
+        }
+
+        .scenes-list {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .scene-list-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .scene-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .scene-list-item:hover {
+            background: #252525;
+        }
+
+        .scene-list-item.selected {
+            background: #2d2d3a;
+            border-left: 3px solid #0066cc;
+        }
+
+        .scene-name {
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .scene-info {
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* Bottom Panel */
+        .bottom-panel {
+            background: #2a2a2a;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            border-top: 1px solid #000;
+            overflow: hidden;
+        }
+
+        .tracks-list {
+            background: #222;
+            padding: 10px;
+            overflow-y: auto;
+            border-right: 1px solid #000;
+        }
+
+        .tracks-list h3 {
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: #999;
+        }
+
+        .track-item {
+            background: #2a2a2a;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .track-item:hover {
+            background: #333;
+        }
+
+        .track-item.selected {
+            background: #2d2d3a;
+            border-color: #0066cc;
+        }
+
+        .track-item-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .track-item-info {
+            font-size: 10px;
+            color: #888;
+        }
+
+        .track-editor {
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .track-editor h3 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #aaa;
+        }
+
+        .editor-field {
+            margin-bottom: 15px;
+        }
+
+        .editor-field label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .editor-field input[type="text"],
+        .editor-field input[type="number"],
+        .editor-field select {
+            width: 100%;
+            padding: 6px 8px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        .editor-field-inline {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .code-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            color: #e0e0e0;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .code-editor.code-error {
+            border-color: #ff4444;
+        }
+
+        .console-output {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .console-header {
+            background: #252525;
+            padding: 8px 10px;
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            border-bottom: 1px solid #444;
+        }
+
+        .console-content {
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .no-selection {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .playback-info {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .time-display {
+            font-family: monospace;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Controls -->
+        <div class="top-controls">
+            <div class="control-group">
+                <label>Canvas:</label>
+                <input type="number" id="canvasWidth" value="800" min="100" max="1920">
+                <span style="color: #666;">×</span>
+                <input type="number" id="canvasHeight" value="600" min="100" max="1080">
+                <button id="applyCanvas">Apply</button>
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div class="control-group">
+                <button id="stepBackward">⏮ -1s</button>
+                <button id="playPause" class="primary">▶ Play</button>
+                <button id="stepForward">+1s ⏭</button>
+                <button id="exportState">Export</button>
+            </div>
+
+            <div class="playback-info">
+                <span class="time-display" id="timeDisplay">0.00s / 10.00s</span>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <canvas id="mainCanvas" width="800" height="600"></canvas>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline">
+            <div class="timeline-header">
+                <h3 style="font-size: 13px; color: #999;">Timeline</h3>
+                <button id="addTrack" class="primary">+ Add Track</button>
+            </div>
+            <div class="timeline-ruler" id="timelineRuler">
+                <div class="playhead" id="playhead"></div>
+            </div>
+            <div class="tracks-container" id="tracksContainer"></div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div class="bottom-panel">
+            <div class="tracks-list">
+                <h3>Scenes</h3>
+                <div id="tracksList"></div>
+            </div>
+            <div class="track-editor" id="trackEditor">
+                <div class="no-selection">Select a track to edit</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="demo-builder.js"></script>
+</body>
+</html>
