@@ -1,5 +1,7 @@
 # Demo Scene Builder - Developer Documentation
 
+*Note*: This is all vibe coded. There is no guarantee anything makes any sense but it works on my machine :-)
+
 ## What Is This?
 
 A web-based tool for creating animated visual demos (demoscene-style) using layered tracks and scenes. Think of it as a timeline-based animation editor where tracks control layering (z-index) and each scene contains JavaScript code that draws to a canvas. All rendering is deterministic and time-based, allowing you to scrub through the timeline and see live previews while editing.
