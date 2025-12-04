@@ -105,7 +105,7 @@ class DemoBuilder {
         // Readme button - remove glimmer effect after first click
         document.getElementById('readme').addEventListener('click', function() {
             this.classList.remove('glimmer');
-            alert('Instructions:\n\nSee the examples for inspiration. Few basic instructions.\n\nYou can build a demo from multiple scenes or one long one. They can be arbitarily short or long (edit the time by selecting the scene and updating the start/end time).\nYou can layer things on top of each other if you want (like the vignette effect in Scene 6).\n\nYou can also render things in a buffer and get it with getBuffer("buffer2") to apply things like rotations on a buffer.\n\nFinally you can drag scenes around and edit them as you wish.\n\nWhen you are done, use export to share it.\n\nIf you run into issues ping @gnyman on discord or on infosec.exchange');
+            alert('Instructions:\n\nSee the examples for inspiration. Few basic instructions.\n\nYou can build a demo from multiple scenes or one long one. They can be arbitarily short or long (edit the time by selecting the scene and updating the start/end time).\nYou can layer things on top of each other if you want (like the vignette effect in Scene 6).\n\nYou can also render things in a buffer and get it with getBuffer("buffer2") to apply things like rotations on a buffer.\n\nFinally you can drag scenes around and edit them as you wish.\n\nWhen you are done, use export to share it.\n\nIf you run into issues ping @gnyman on discord or on infosec.exchange.\n\nIf you want to help improve things see github/gnyman/demo-builder.');
         }, { once: false });
 
         // Timeline ruler drag to seek
